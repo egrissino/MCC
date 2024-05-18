@@ -11,9 +11,6 @@ int main (int argc, char** argv)
     printf ("Multi-Focal Curves\n");
     
     Mfc_t curve1;
-    curve1.numFoci = NUM_FOCI;
-    curve1.foci = malloc (sizeof(Point_t) * NUM_FOCI);
-
     curve1.foci[0] = (Point_t){134, 23};
     curve1.foci[1] = (Point_t){98, 206};
     curve1.foci[2] = (Point_t){49, 182};
@@ -29,11 +26,19 @@ int main (int argc, char** argv)
     printPoint (curve1.foci[1]);
     printPoint (curve1.foci[2]);
 
-    getCurve (curve1, minDist + 2);
-
     MfcSet_t set = getCurveSet (curve1);
+    MfcSlice_t slice = getCurve (set, minDist + 2);
 
-    // /* Cleanup */
-    free (curve1.foci);
+    if (writeCurveSetToFile ("curveset.csv", set) < 0)
+    {
+        printf ("Failed to open file: curveset.csv");
+    }
+    if (writeCurveToFile ("slice.csv", slice) < 0)
+    {
+        printf ("Failed to open file: slice.csv");
+    }
+
+    /* Cleanup */
     free (set.Y);
+    free (slice.X);
 }

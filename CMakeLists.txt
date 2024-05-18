@@ -22,6 +22,9 @@ if (CONFIG_TEST_BENCH)
     add_compile_definitions(TEST_BENCH)
 endif()
 
+target_link_libraries(${TARGET_NAME}
+    m
+)
 
 
 

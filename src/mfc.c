@@ -43,13 +43,13 @@ base2 getDistanceSum (Mfc_t curve, Point_t p)
 }
 
 /* Solutions */
-void getCurve (MfcSet_t set, base2 s)
+MfcSlice_t getCurve (MfcSet_t set, base2 s)
 {
-    base2 max = (1 << sizeof(base));
+    MfcSlice_t slice;
     base count = 0;
-    for (base x = 0; x < max; x++)
+    for (base x = 0; x < MAX_BASE; x++)
     {
-        for (base y = 0; y < max; y++)
+        for (base y = 0; y < MAX_BASE; y++)
         {
             if ((&set.Y[x])[y] == s)
             {
@@ -57,36 +57,35 @@ void getCurve (MfcSet_t set, base2 s)
             } 
         }
     }
-
-    set.curve.X = malloc( sizeof(Point_t) * count );
+    slice.size = count;
+    slice.X = malloc( sizeof(Point_t) * count );
     base idx = 0;
     Point_t* p;
-    for (base x = 0; x < max; x++)
+    for (base x = 0; x < MAX_BASE; x++)
     {
-        for (base y = 0; y < max; y++)
+        for (base y = 0; y < MAX_BASE; y++)
         {
             if ((&set.Y[x])[y] == s)
             {
-                p = &set.curve.X[idx];
+                p = &slice.X[idx];
                 p->X[0] = x;
                 p->X[1] = y;               
             } 
         }
     }
-
+    return slice;
 }
 
 MfcSet_t getCurveSet (Mfc_t curve)
 {
-    base max = (1 << (sizeof(base)*8));
     MfcSet_t set;
     set.curve = curve;
-    set.Y = malloc ( pow(max, 2) );
+    set.Y = malloc ( pow(MAX_BASE, 2) );
 
     Point_t p;
-    for (base x = 0; x < max; x++)
+    for (base x = 0; x < MAX_BASE; x++)
     {
-        for (base y = 0; y < max; y++)
+        for (base y = 0; y < MAX_BASE; y++)
         {
             p.X[0] = x;
             p.X[1] = y;
@@ -107,7 +106,41 @@ void printPoint (Point_t p)
     printf (")\n");
 }
 
-void writeToFile (const char* filename, MfcSet_t set)
+int writeCurveToFile (const char* filename, MfcSlice_t slice)
 {
+    FILE* outfile = fopen (filename, "w");
 
+    if (!outfile)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < slice.size; i++)
+    {
+        fprintf (outfile, "%d,%d\n", slice.X[i].X[0], slice.X[i].X[1]);
+    }
+
+    fclose (outfile);
+    return 0;
+}
+
+int writeCurveSetToFile (const char* filename, MfcSet_t set)
+{
+    FILE* outfile = fopen (filename, "w");
+
+    if (!outfile)
+    {
+        return -1;
+    }
+
+    for (int x = 0; x < MAX_BASE; x++)
+    {
+        for (int y = 0; y < MAX_BASE; y++)
+        {
+            fprintf(outfile, "%d,%d,%d\n", x, y, (&set.Y[x])[y]);
+        }
+    }
+
+    fclose (outfile);
+    return 0;
 }
