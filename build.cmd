@@ -1,1 +1,0 @@
-bash --login build.sh
