@@ -1,4 +1,4 @@
-from MultifocalCurveCryptography.keyexchange import KeyExchange
+from mcc.keyexchange import KeyExchange
 import numpy as np
 
 # Example shared parameters

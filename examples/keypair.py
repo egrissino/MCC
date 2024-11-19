@@ -1,5 +1,5 @@
-from MultifocalCurveCryptography.keygen import KeyGenerator
-from MultifocalCurveCryptography.encryption import Encryption
+from mcc.keygen import KeyGenerator
+from mcc.encryption import Encryption
 
 # Generate a keypair
 keypair = KeyGenerator.generate_keypair(foci_count=4, dimensions=126, constant_sum=104)

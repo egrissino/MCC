@@ -1,4 +1,4 @@
-from MultifocalCurveCryptography import KeyGenerator, Encryption, DigitalSignature, KeyExchange
+from mcc import KeyGenerator, Encryption, DigitalSignature, KeyExchange
 
 # Key generation
 keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2, constant_sum=100)
