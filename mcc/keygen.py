@@ -127,10 +127,11 @@ class KeyFileHandler:
             lines = file.readlines()
 
         public_key = {
-            "foci_count": int(lines[1].split(": ")[1]),
-            "dimensions": int(lines[2].split(": ")[1]),
-            "constant_sum": int(lines[3].split(": ")[1]),
-            "foci_hash": lines[4].split(": ")[1].strip(),
+            "version" : int(lines[1].split(": ")[1]),
+            "foci_count": int(lines[2].split(": ")[1]),
+            "dimensions": int(lines[3].split(": ")[1]),
+            "constant_sum": int(lines[4].split(": ")[1]),
+            "foci_hash": lines[5].split(": ")[1].strip(),
         }
 
         return public_key
