@@ -35,7 +35,7 @@
 To install MCC, clone the repository and use `pip` to install the package:
 
 ```bash
-git clone https://github.com/egrissino/MultifocalCurveCryptography.git
+git clone https://github.com/egrissino/MCC.git
 cd MultifocalCurveCryptography
 pip install .
 ```
@@ -43,7 +43,7 @@ pip install .
 Alternatively, you can install directly from GitHub:
 
 ```bash
-pip install git+https://github.com/egrissino/MultifocalCurveCryptography.git
+pip install git+https://github.com/egrissino/MCC.git
 ```
 
 ---
