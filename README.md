@@ -54,7 +54,7 @@ Here’s how you can quickly generate keys and encrypt/decrypt a message using M
 
 ### Generate a Key Pair
 ```python
-from MultifocalCurveCryptography.keygen import KeyGenerator
+from mcc.keygen import KeyGenerator
 
 keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2, constant_sum=100)
 private_key = keypair['private']
@@ -66,7 +66,7 @@ print("Public Curve Foci:", public_curve.foci)
 
 ### Encrypt a Message
 ```python
-from MultifocalCurveCryptography.encryption import Encryption
+from mcc.encryption import Encryption
 
 plaintext = "This is a secure message!"
 ciphertext = Encryption.encrypt(public_curve, plaintext)
@@ -75,7 +75,7 @@ print("Ciphertext:", ciphertext)
 
 ### Decrypt a Message
 ```python
-from MultifocalCurveCryptography.encryption import Encryption
+from mcc.encryption import Encryption
 
 decrypted_message = Encryption.decrypt(private_key, ciphertext)
 print("Decrypted Message:", decrypted_message)
@@ -102,7 +102,7 @@ The difficulty of reconstructing \(N\) foci and \(D\) from sampled points underp
 
 ### Key Generation
 ```python
-from MultifocalCurveCryptography.keygen import KeyGenerator
+from mcc.keygen import KeyGenerator
 
 keypair = KeyGenerator.generate_keypair(foci_count=5, dimensions=3, constant_sum=150)
 private_key = keypair['private']
@@ -114,7 +114,7 @@ print("Public Curve:", public_curve)
 
 ### Encryption and Decryption
 ```python
-from MultifocalCurveCryptography.encryption import Encryption
+from mcc.encryption import Encryption
 
 # Encrypt
 ciphertext = Encryption.encrypt(public_curve, "Secure message")
@@ -127,7 +127,7 @@ print("Decrypted Message:", decrypted_message)
 
 ### Key Exchange
 ```python
-from MultifocalCurveCryptography.keyexchange import KeyExchange
+from mcc.keyexchange import KeyExchange
 
 base_point = [10, 20]
 public_point = [15, 25]
