@@ -3,6 +3,14 @@ from mcc.core import MultifocalCurve
 import os
 import hashlib
 
+def theoretical_minimum_constant_sum(foci):
+    # Compute the centroid of the foci
+    centroid = np.mean(foci, axis=0)
+    # Calculate the sum of distances from the centroid to all foci
+    min_sum = sum(np.linalg.norm(focus - centroid) for focus in foci)
+    return min_sum
+
+
 class KeyPair:
     def __init__(self, private_key, public_key):
         self.private_key = private_key
