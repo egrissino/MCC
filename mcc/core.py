@@ -2,19 +2,42 @@ import numpy as np
 
 class MultifocalCurve:
     def __init__(self, foci, constant_sum):
-        """Initialize with integral foci and a constant sum."""
+        '''
+        Initialize with integral foci and a constant sum.
+        '''
         self.foci = np.array(foci, dtype=int)
         self.constant_sum = constant_sum
 
     def is_on_curve(self, point):
-        """Check if a point is on the curve."""
+        '''
+        Check if a point is on the curve.
+        '''
         return np.isclose(
             np.sum([np.linalg.norm(point - f) for f in self.foci]), 
             self.constant_sum
         )
 
+    def theoretical_minimum_constant_sum(self):
+        '''
+        Calculate the centroid and theoretical minimum constant sum
+        '''
+        # Compute the centroid of the foci
+        self.centroid = np.mean(self.foci, axis=0)
+        # Calculate the sum of distances from the centroid to all foci
+        min_sum = sum(np.linalg.norm(focus - centroid) for focus in self.foci)
+        return min_sum
+
     def generate_point(self, max_iterations=1000, tolerance=1e-5):
-        """Generate a random point on the multi-focal curve."""
+        '''
+        Generate a random point on the multi-focal curve
+        '''
+
+        # Compute distances and check if the constant sum can be achieved
+        distances = [np.linalg.norm(focus - point) for focus in self.foci]
+        if sum(distances) < self.constant_sum:
+            raise ValueError("Point cannot satisfy the given constant sum.")
+
+        # Compute the point if valid
         dimensions = self.foci.shape[1]
         point = np.random.randint(0, 100, size=(dimensions,), dtype=int)  # Start with random integral point
         

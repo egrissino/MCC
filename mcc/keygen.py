@@ -2,14 +2,9 @@ import numpy as np
 from mcc.core import MultifocalCurve
 import os
 import hashlib
+import random
 
-def theoretical_minimum_constant_sum(foci):
-    # Compute the centroid of the foci
-    centroid = np.mean(foci, axis=0)
-    # Calculate the sum of distances from the centroid to all foci
-    min_sum = sum(np.linalg.norm(focus - centroid) for focus in foci)
-    return min_sum
-
+version = 2
 
 class KeyPair:
     def __init__(self, private_key, public_key):
@@ -30,7 +25,10 @@ class KeyPair:
 class KeyGenerator:
     @staticmethod
     def generate_keypair(foci_count=10, dimensions=256, constant_sum=None):
-        import random
+        '''
+        Generate Keypair with the given parameters
+        '''
+        
         min_sum = theoretical_minimum_constant_sum(foci)
         if constant_sum is None or constant_sum < min_sum:
             constant_sum = min_sum + np.random.uniform(1, 10) 
@@ -64,27 +62,29 @@ class KeyGenerator:
 class KeyFileHandler:
     @staticmethod
     def save_private_key(filepath, private_key):
+        '''
+        Save pricate key to file
+        '''
         with open(filepath, "w") as file:
             file.write("-----BEGIN MCC PRIVATE KEY-----\n")
-            file.write(f"Version: 1\n")
-            file.write(f"Foci Count: {private_key['foci_count']}\n")
-            file.write(f"Dimensions: {private_key['dimensions']}\n")
-            file.write(f"Constant Sum: {private_key['constant_sum']}\n")
-            file.write("Foci:\n")
+            file.write(f":{version}")
+            file.write(f":{private_key['foci_count']}")
+            file.write(f":{private_key['dimensions']}")
+            file.write(f":{private_key['constant_sum']}")
             for i, focus in enumerate(private_key["foci"]):
-                coords = ", ".join(f"0x{coord:064x}" for coord in focus)
-                file.write(f"Focus {i + 1}: {coords}\n")
+                coords = ",".join(f"0x{coord:064x}" for coord in focus)
+                file.write(f":{i + 1}| {coords}\n")
             file.write("-----END MCC PRIVATE KEY-----\n")
 
     @staticmethod
     def save_public_key(filepath, public_key):
         with open(filepath, "w") as file:
             file.write("-----BEGIN MCC PUBLIC KEY-----\n")
-            file.write(f"Version: 1\n")
-            file.write(f"Foci Count: {public_key['foci_count']}\n")
-            file.write(f"Dimensions: {public_key['dimensions']}\n")
-            file.write(f"Constant Sum: {public_key['constant_sum']}\n")
-            file.write(f"Foci Hash: {public_key['foci_hash']}\n")
+            file.write(f":{version}")
+            file.write(f":{public_key['foci_count']}")
+            file.write(f":{public_key['dimensions']}")
+            file.write(f":{public_key['constant_sum']}")
+            file.write(f":{public_key['foci_hash']}\n")
             file.write("-----END MCC PUBLIC KEY-----\n")
 
     @staticmethod
@@ -92,11 +92,13 @@ class KeyFileHandler:
         with open(filepath, "r") as file:
             lines = file.readlines()
 
+        data = lines[1].split(": ")
+
         private_key = {
-            "version": int (lines[1].split(": ")[1].strip()),
-            "foci_count": int(lines[2].split(": ")[1].strip()),
-            "dimensions": int(lines[3].split(": ")[1].strip()),
-            "constant_sum": int(lines[4].split(": ")[1].strip()),
+            "version": int (data[0].strip()),
+            "foci_count": int(data[1].strip()),
+            "dimensions": int(data[2].strip()),
+            "constant_sum": int(data[3].strip()),
             "foci": [],
         }
 
@@ -104,16 +106,16 @@ class KeyFileHandler:
         for line in lines[6:]:  # Start processing after the header
             line = line.strip()
 
-            if line.startswith("Focus"):  # Start of a new focus
+            if line.startswith(":"):  # Start of a new focus
                 if current_focus:  # Save the previous focus if it exists
                     private_key["foci"].append(current_focus)
                     current_focus = []
 
                 # Parse the first line of the new focus
-                parts = line.split(": ", 1)
+                parts = line.split(":", 1)
                 if len(parts) > 1:
                     coords = parts[1].strip()
-                    current_focus.extend(coords.split(", "))
+                    current_focus.extend(coords.split(","))
             elif line and not line.startswith("-----"):  # Continuation of the previous focus
                 current_focus.extend(line.split(", "))
 
@@ -147,12 +149,14 @@ class KeyFileHandler:
         with open(filepath, "r") as file:
             lines = file.readlines()
 
+        data = lines[1].split(":")
+
         public_key = {
-            "version" : int(lines[1].split(": ")[1]),
-            "foci_count": int(lines[2].split(": ")[1]),
-            "dimensions": int(lines[3].split(": ")[1]),
-            "constant_sum": int(lines[4].split(": ")[1]),
-            "foci_hash": lines[5].split(": ")[1].strip(),
+            "version" : int(data[1]),
+            "foci_count": int(data[2]),
+            "dimensions": int(data[3]),
+            "constant_sum": int(data[4]),
+            "foci_hash": data[5].strip(),
         }
 
         return public_key
