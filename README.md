@@ -88,12 +88,12 @@ print("Decrypted Message:", decrypted_message)
 ### Multi-Focal Curves
 A multi-focal curve is defined by:
 - \(N\) foci in \(M\)-dimensional space.
-- A constant sum \(D\), which is the sum of distances from any point on the curve to all foci.
+- A constant sum \(C\), which is the sum of distances from any point on the curve to all foci.
 
 The difficulty of reconstructing \(N\) foci and \(D\) from sampled points underpins MCC's security.
 
 ### Key Structure
-- **Private Key**: Contains the foci (\(N \times M\)) and constant sum (\(D\)).
+- **Private Key**: Contains the foci (\(N \times M\)) and constant sum (\(C\)).
 - **Public Key**: Encodes the multi-focal curve geometry.
 
 ---
@@ -144,7 +144,7 @@ print("Shared Secret:", shared_secret)
 ### Private Key
 - PEM-encoded file storing:
   - Foci (integer coordinates).
-  - Constant sum \(D\).
+  - Constant sum \(C\).
 
 ```text
 -----BEGIN MCC PRIVATE KEY-----
