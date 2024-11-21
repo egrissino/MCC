@@ -1,5 +1,5 @@
 import numpy as np
-from .core import MultifocalCurve
+from mcc.core import MultifocalCurve
 import os
 import hashlib
 
@@ -8,11 +8,24 @@ class KeyPair:
         self.private_key = private_key
         self.public_key = public_key
 
+    def __getitem__(self, a):
+        '''
+        Get Item at index
+        '''
+        if a == 'private':
+            return self.priavte_key
+        if a == 'public':
+            return self.priavte_key
+        return None
+
 
 class KeyGenerator:
     @staticmethod
-    def generate_keypair(foci_count=10, dimensions=256, constant_sum=1234567890123456789012345678901234567890):
+    def generate_keypair(foci_count=10, dimensions=256, constant_sum=None):
         import random
+        min_sum = theoretical_minimum_constant_sum(foci)
+        if constant_sum is None or constant_sum < min_sum:
+            constant_sum = min_sum + np.random.uniform(1, 10) 
         # Generate random foci (256-bit integers) for each dimension
         private_key = {
             "foci_count": foci_count,
