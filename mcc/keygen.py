@@ -24,23 +24,19 @@ class KeyPair:
 
 class KeyGenerator:
     @staticmethod
-    def generate_keypair(foci_count=10, dimensions=256, constant_sum=None):
+    def generate_keypair(foci_count=10, dimensions=256, constant_sum=None, bits=256):
         '''
         Generate Keypair with the given parameters
         '''
+        # Generate random foci for each dimension
+        curve = MultifocalCurve (None, constant_sum, foci_count=foci_count, dimensions=dimensions, bits=bits)
+        constant_sum = curve.constant_sum + np.random.uniform(1, 10)
         
-        min_sum = theoretical_minimum_constant_sum(foci)
-        if constant_sum is None or constant_sum < min_sum:
-            constant_sum = min_sum + np.random.uniform(1, 10) 
-        # Generate random foci (256-bit integers) for each dimension
         private_key = {
             "foci_count": foci_count,
             "dimensions": dimensions,
             "constant_sum": constant_sum,
-            "foci": [
-                [random.getrandbits(256) for _ in range(dimensions)]
-                for _ in range(foci_count)
-            ],
+            "foci": [curve.foci],
         }
 
         # Compute a SHA-256 hash of the foci for the public key

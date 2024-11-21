@@ -1,12 +1,21 @@
 import numpy as np
 
 class MultifocalCurve:
-    def __init__(self, foci, constant_sum):
+    def __init__(self, foci, constant_sum, dimensions=2, foci_count=3, bits=256):
         '''
         Initialize with integral foci and a constant sum.
         '''
-        self.foci = np.array(foci, dtype=int)
-        self.constant_sum = constant_sum
+        if foci is None:
+            self.foci = [
+                [random.getrandbits(bits) for _ in range(dimensions)]
+                for _ in range(foci_count)
+                ]
+
+        if constant_sum is None:
+            self.constant_sum = the
+        else:
+            self.constant_sum = theoretical_minimum_constant_sum ()
+    
 
     def is_on_curve(self, point):
         '''
