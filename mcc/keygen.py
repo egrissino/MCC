@@ -2,7 +2,6 @@ import numpy as np
 from mcc.core import MultifocalCurve
 import os
 import hashlib
-import random
 
 version = 2
 

@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class MultifocalCurve:
     def __init__(self, foci, constant_sum, dimensions=2, foci_count=3, bits=256):
