@@ -2,20 +2,21 @@ import numpy as np
 import random
 
 class MultifocalCurve:
-    def __init__(self, foci, constant_sum, dimensions=2, foci_count=3, bits=256):
+    def __init__(self, foci, constant_sum, dimensions=4, foci_count=10, bits=32):
         '''
         Initialize with integral foci and a constant sum.
         '''
         if foci is None:
-            self.foci = [
+            self.foci = np.array([
                 [random.getrandbits(bits) for _ in range(dimensions)]
                 for _ in range(foci_count)
-                ]
+                ], dtype=int)
 
-        if constant_sum is None:
-            self.constant_sum = the
-        else:
-            self.constant_sum = theoretical_minimum_constant_sum ()
+        print (foci)
+
+        self.constant_sum = self.theoretical_minimum_constant_sum ()
+        if constant_sum != None:
+            self.constant_sum = constant_sum
     
 
     def is_on_curve(self, point):
@@ -34,7 +35,7 @@ class MultifocalCurve:
         # Compute the centroid of the foci
         self.centroid = np.mean(self.foci, axis=0)
         # Calculate the sum of distances from the centroid to all foci
-        min_sum = sum(np.linalg.norm(focus - centroid) for focus in self.foci)
+        min_sum = sum(np.linalg.norm(focus - self.centroid) for focus in self.foci)
         return min_sum
 
     def generate_point(self, max_iterations=1000, tolerance=1e-5):

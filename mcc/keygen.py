@@ -15,39 +15,40 @@ class KeyPair:
         Get Item at index
         '''
         if a == 'private':
-            return self.priavte_key
+            return self.private_key
         if a == 'public':
-            return self.priavte_key
+            return self.public_key
         return None
 
 
 class KeyGenerator:
     @staticmethod
-    def generate_keypair(foci_count=10, dimensions=256, constant_sum=None, bits=256):
+    def generate_keypair(foci_count=10, dimensions=256, constant_sum=None, bits=32):
         '''
         Generate Keypair with the given parameters
         '''
         # Generate random foci for each dimension
-        curve = MultifocalCurve (None, constant_sum, foci_count=foci_count, dimensions=dimensions, bits=bits)
-        constant_sum = curve.constant_sum + np.random.uniform(1, 10)
+        
+        curve = MultifocalCurve (foci=None, constant_sum=constant_sum, foci_count=foci_count, dimensions=dimensions, bits=bits)   
+        curve.constant_sum = int(curve.constant_sum + np.random.uniform(1, 10))
         
         private_key = {
             "foci_count": foci_count,
             "dimensions": dimensions,
-            "constant_sum": constant_sum,
-            "foci": [curve.foci],
+            "constant_sum": curve.constant_sum,
+            "foci": curve.foci,
         }
 
         # Compute a SHA-256 hash of the foci for the public key
         foci_flat = [item for sublist in private_key["foci"] for item in sublist]
         foci_hash = hashlib.sha256(
-            b"".join(coord.to_bytes(32, byteorder="big") for coord in foci_flat)
+            b"".join(int(coord).to_bytes(32, byteorder="big") for coord in foci_flat)
         ).hexdigest()
 
         public_key = {
             "foci_count": foci_count,
             "dimensions": dimensions,
-            "constant_sum": constant_sum,
+            "constant_sum": curve.constant_sum,
             "foci_hash": foci_hash,
         }
 
@@ -67,9 +68,9 @@ class KeyFileHandler:
             file.write(f":{private_key['dimensions']}")
             file.write(f":{private_key['constant_sum']}")
             for i, focus in enumerate(private_key["foci"]):
-                coords = ",".join(f"0x{coord:064x}" for coord in focus)
-                file.write(f":{i + 1}| {coords}\n")
-            file.write("-----END MCC PRIVATE KEY-----\n")
+                coords = ",".join(f"0x{coord:0x}" for coord in focus)
+                file.write(f"\n:{i + 1}|{coords}")
+            file.write("\n-----END MCC PRIVATE KEY-----\n")
 
     @staticmethod
     def save_public_key(filepath, public_key):
@@ -87,18 +88,18 @@ class KeyFileHandler:
         with open(filepath, "r") as file:
             lines = file.readlines()
 
-        data = lines[1].split(": ")
+        data = lines[1].split(":")
 
         private_key = {
-            "version": int (data[0].strip()),
-            "foci_count": int(data[1].strip()),
-            "dimensions": int(data[2].strip()),
-            "constant_sum": int(data[3].strip()),
+            "version": int (data[1].strip()),
+            "foci_count": int(data[2].strip()),
+            "dimensions": int(data[3].strip()),
+            "constant_sum": int(data[4].strip()),
             "foci": [],
         }
 
         current_focus = []  # To store coordinates of the current focus
-        for line in lines[6:]:  # Start processing after the header
+        for line in lines[2:]:  # Start processing after the header
             line = line.strip()
 
             if line.startswith(":"):  # Start of a new focus
@@ -107,7 +108,7 @@ class KeyFileHandler:
                     current_focus = []
 
                 # Parse the first line of the new focus
-                parts = line.split(":", 1)
+                parts = line.split("|", 1)
                 if len(parts) > 1:
                     coords = parts[1].strip()
                     current_focus.extend(coords.split(","))

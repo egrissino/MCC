@@ -1,7 +1,7 @@
 from mcc.keygen import KeyGenerator, KeyFileHandler
 
 # Generate a key pair
-keypair = KeyGenerator.generate_keypair(foci_count=10, dimensions=64)
+keypair = KeyGenerator.generate_keypair(foci_count=32, dimensions=64, bits=32)
 
 # Save keys to files
 KeyFileHandler.save_private_key("mcc_private_key.pem", keypair.private_key)
