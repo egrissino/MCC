@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="mcc",
-    version="0.1.0",  # Initial version
+    version="0.1.1",  # Version 1
     author="Evan Grissino",
     author_email="evanjgrissino@gmail.com",
     description="A cryptography library based on multi-focal curves",
