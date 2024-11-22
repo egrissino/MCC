@@ -56,7 +56,7 @@ Here’s how you can quickly generate keys and encrypt/decrypt a message using M
 ```python
 from mcc.keygen import KeyGenerator
 
-keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2, constant_sum=100)
+keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2)
 private_key = keypair['private']
 public_curve = keypair['public']
 
@@ -104,7 +104,7 @@ The difficulty of reconstructing \(N\) foci and \(D\) from sampled points underp
 ```python
 from mcc.keygen import KeyGenerator
 
-keypair = KeyGenerator.generate_keypair(foci_count=5, dimensions=3, constant_sum=150)
+keypair = KeyGenerator.generate_keypair(foci_count=5, dimensions=3)
 private_key = keypair['private']
 public_curve = keypair['public']
 
