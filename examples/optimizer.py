@@ -33,10 +33,13 @@ def optimize_parameters(target_entropy, entropy_range, point, foci_template):
     """
     results = []
     constant_sum_base = 10 ** 10  # Base constant sum range for scaling
-    
-    for num_foci in range(5, 201, 5):  # Test a wider range of foci
+
+    for num_foci in range(3, 256, 1):  # Test a wider range of foci
         for dimensions in range(2, 51, 2):  # Test more dimensions
             # Dynamically adjust the constant sum range
+            point = (np.random.rand(dimensions) * 2**31).astype('i')
+            foci_template = np.random.rand(num_foci, dimensions)
+            
             constant_sum_range = constant_sum_base * (dimensions / 10)
             
             entropy = calculate_entropy(num_foci, dimensions, constant_sum_range)
@@ -59,8 +62,9 @@ if __name__ == "__main__":
 
     # Random test data
     N, M = 500, 50  # Initial max foci and dimensions
-    point = np.random.rand(M)
+    point = (np.random.rand(M) * 2**31).astype('i')
     foci_template = np.random.rand(N, M)
+    print (point)
 
     # Optimize parameters
     best_config = optimize_parameters(target_entropy, entropy_range, point, foci_template)
@@ -72,7 +76,7 @@ if __name__ == "__main__":
         print(f"  - Dimensions: {dimensions}")
         print(f"  - Constant Sum Range: {constant_sum}")
         print(f"  - Achieved Entropy: {entropy:.2f} bits")
-        print(f"  - Computation Cost: {cost:.4f} seconds")
+        print(f"  - Computation Cost: {cost:.9f} seconds")
     else:
         print("No configuration found within the entropy limits.")
 

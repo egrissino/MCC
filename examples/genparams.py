@@ -7,12 +7,12 @@ def calculate_entropy(N, M, b_focus, b_C):
     """
     return N * M * b_focus + b_C
 
-def generate_parameter_sets(target_entropy=256, max_N=10, max_M=10, max_b_focus=256, b_C=256):
+def generate_parameter_sets(target_entropy=256, max_N=10, max_M=10, max_b_focus=32, b_C=32):
     """
     Generate parameter sets that achieve at least the target entropy.
     """
     valid_sets = []
-    for N, M, b_focus in itertools.product(range(1, max_N + 1), range(1, max_M + 1), range(64, max_b_focus + 1, 64)):
+    for N, M, b_focus in itertools.product(range(2, max_N + 1), range(3, max_M + 1), range(8, max_b_focus + 1, 8)):
         entropy = calculate_entropy(N, M, b_focus, b_C)
         if entropy >= target_entropy:
             valid_sets.append((N, M, b_focus, b_C, entropy))
@@ -39,13 +39,13 @@ def calculate_efficiency(N, M, b_focus, b_C, target_entropy):
     cost = N * M  # Approximation for computational cost
     return entropy / cost
 
-def find_optimal_parameters(target_entropy=256, max_N=10, max_M=10, max_b_focus=256, b_C=256):
+def find_optimal_parameters(target_entropy=256, max_N=10, max_M=10, max_b_focus=32, b_C=32):
     """
     Search for the optimal parameter set with the best efficiency.
     """
     best_efficiency = 0
     best_params = None
-    for N, M, b_focus in itertools.product(range(1, max_N + 1), range(1, max_M + 1), range(64, max_b_focus + 1, 64)):
+    for N, M, b_focus in itertools.product(range(2, max_N + 1), range(3, max_M + 1), range(8, max_b_focus + 1, 8)):
         efficiency = calculate_efficiency(N, M, b_focus, b_C, target_entropy)
         if efficiency > best_efficiency:
             best_efficiency = efficiency

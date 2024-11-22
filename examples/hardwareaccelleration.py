@@ -134,18 +134,11 @@ class DistanceSumCalculator:
         """
         Compute the sum of distances between a point and multiple foci (CPU fallback).
         """
-        if point.ndim == 1:
-            # Reshape point to match the dimensions of foci for broadcasting
-            point = point[np.newaxis, :]  # Shape becomes (1, dimensions)
-
-        if point.shape[1] != foci.shape[1]:
-            raise ValueError(
-                f"Dimension mismatch: foci have shape {foci.shape}, but point has shape {point.shape}"
-            )
-        
-        squared_diff = (foci - point) ** 2  # Element-wise square of differences
-        distances = np.sqrt(np.sum(squared_diff, axis=1))  # Euclidean distance
-        return np.sum(distances)  # Sum of distances
+        distance_sum = 0
+        for focus in foci:
+            squared_diff = (focus - point) ** 2
+            distance_sum += np.sqrt(np.sum(squared_diff))
+        return distance_sum
 
 
 # Example usage
