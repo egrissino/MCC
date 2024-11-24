@@ -64,9 +64,9 @@ class DistanceSumCalculator:
         print(f"Detected platform: {self.platform}")
 
     def distance_sum(self, point, foci):
-        """
+        '''
         Compute the distance sum using the appropriate backend.
-        """
+        '''
         if self.platform == "macos_torch_mps":
             return self._distance_sum_torch(point, foci, use_mps=True)
         elif self.platform == "macos_intel_gpu":
@@ -77,9 +77,9 @@ class DistanceSumCalculator:
             return self._distance_sum_cpu(point, foci)
 
     def _distance_sum_opencl(self, point, foci):
-        """
+        '''
         Compute distance sum using OpenCL for Intel Integrated Graphics.
-        """
+        '''
         import pyopencl as cl
 
         # OpenCL setup
@@ -121,9 +121,9 @@ class DistanceSumCalculator:
         return np.sum(distances)
 
     def _distance_sum_simd(self, point, foci):
-        """
+        '''
         Compute distance sum using SIMD-optimized libraries.
-        """
+        '''
         import numexpr as ne
 
         squared_diff = ne.evaluate("(foci - point) ** 2")
@@ -131,17 +131,15 @@ class DistanceSumCalculator:
         return distances.sum()
 
     def _distance_sum_cpu(self, point, foci):
-        """
+        '''
         Compute the sum of distances between a point and multiple foci (CPU fallback).
-        """
-        distance_sum = 0
+        '''
+        distance_sum = np.uint64(0)
         
         for focus in foci:
-            squared_diff = 0
-            for dim in range(len(focus)):
-                squared_diff += (focus[dim] - point[dim]) ** 2
-            distance_sum += np.sqrt(squared_diff)
-        return distance_sum
+            squared_diff = (focus - point) ** 2
+            distance_sum += np.sqrt(np.sum(squared_diff))
+        return distance_sum / len(foci)
 
 
 # Example usage
@@ -149,8 +147,8 @@ if __name__ == "__main__":
     calculator = DistanceSumCalculator()
 
     N, M = 4, 5  # 4 foci, 5 dimensions
-    point = ((np.random.rand(M)+1) * (2**30)).astype('i')
-    foci = ((np.random.rand(N, M)+1) * (2**30)).astype('i')
+    point = ((np.random.rand(M)+1) * (2**28)).astype('i')
+    foci = ((np.random.rand(N, M)+1) * (2**28)).astype('i')
 
     print (point)
     print (foci)

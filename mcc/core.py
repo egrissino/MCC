@@ -1,36 +1,116 @@
 import numpy as np
 import random
+from mcc.hardwareaccelleration import DistanceSumCalculator
+from sympy import symbols, cos, sin, sqrt, Eq, solve
+
+calculator = DistanceSumCalculator()
 
 class MultifocalCurve:
-    def __init__(self, foci, constant_sum, dimensions=4, foci_count=10, bits=32):
-        '''
-        Initialize with integral foci and a constant sum.
-        '''
+    def __init__(self, foci=None, constant_sum=None, dimensions=4, foci_count=10, bits=32, point=None, seed=None):
+        """
+        Initialize the curve with specified properties.
+        """
+        self.dimensions = dimensions
+        self.foci_count = foci_count
+        self.bits = bits
+
+        if not (seed is None):
+            random.seed(seed)
+            np.random.seed(seed)
+            
         if foci is None:
-            self.foci = np.array([
-                [random.getrandbits(bits) for _ in range(dimensions)]
-                for _ in range(foci_count)
-                ], dtype=int)
+            self.foci = np.random.randint(0, 2**(bits), size=(foci_count, dimensions), dtype=np.uint32)
+        else:
+            self.foci = np.array(foci, dtype=np.uint32)
 
-        print (foci)
+        if constant_sum is None:
+            if point is None:
+                self.point = np.random.randint(0, 2**(bits), size=(dimensions), dtype=np.uint32)
+            else:
+                self.point = point
+            self.constant_sum = np.uint32(calculator.distance_sum (self.point, self.foci))
+        else:
+            self.constant_sum = np.uint32(constant_sum)
 
-        self.constant_sum = self.theoretical_minimum_constant_sum ()
-        if constant_sum != None:
-            self.constant_sum = constant_sum
-    
 
     def is_on_curve(self, point):
-        '''
+        """
         Check if a point is on the curve.
-        '''
-        return np.isclose(
-            np.sum([np.linalg.norm(point - f) for f in self.foci]), 
-            self.constant_sum
-        )
+        """
+        distances = [np.linalg.norm(point - focus) for focus in self.foci]
+        return np.isclose(sum(distances), self.constant_sum)
 
-    def theoretical_minimum_constant_sum(self):
+    def set_constant_sum_from_point(self, point):
+        """
+        Set the constant sum based on a given point.
+        """
+        distances = [np.linalg.norm(point - focus) for focus in self.foci]
+        self.constant_sum = sum(distances)
+
+    def tangent_vector(self, point, epsilon=1e-5):
+        """
+        Compute a tangent vector to the curve at a given point.
+        """
+        gradient = self.calculate_gradient(point, epsilon)
+        tangent = np.cross(gradient, np.random.randn(len(gradient)))
+        return tangent / np.linalg.norm(tangent)
+
+    def calculate_gradient(self, point, epsilon=1e-5):
+        """
+        Calculate the gradient of the curve around a given point.
+        """
+        dimensions = self.foci.shape[1]
+        gradient = np.zeros(dimensions)
+
+        for i in range(dimensions):
+            perturbed_point = point.copy()
+            perturbed_point[i] += epsilon
+
+            original_sum = np.sum([np.linalg.norm(point - focus) for focus in self.foci])
+            perturbed_sum = np.sum([np.linalg.norm(perturbed_point - focus) for focus in self.foci])
+
+            gradient[i] = (perturbed_sum - original_sum) / epsilon
+
+        return gradient
+
+    def project_with_tangent(self, point, tangent, steps=100, learning_rate=0.1):
+        """
+        Move a point along the curve using a tangent vector.
+        """
+        for _ in range(steps):
+            distances = np.array([np.linalg.norm(point - focus) for focus in self.foci])
+            current_sum = sum(distances)
+
+            if np.isclose(current_sum, self.constant_sum, atol=1e-5):
+                return point
+
+            # Move along the tangent vector while maintaining constant sum
+            point += learning_rate * tangent
+
+        raise ValueError("Failed to project the point onto the curve.")
+
+
+    def __repr__(self):
         '''
-        Calculate the centroid and theoretical minimum constant sum
+        Yeild texual represetnation of the class
+        '''
+        return (f"MFC @{hex(id(self))}\n\tN: {self.foci_count}, M: {self.dimensions}, Bits: {self.bits}, C: {self.constant_sum}")
+    
+
+if __name__ == "__main__":
+
+    mfc = MultifocalCurve (seed=1010101)
+    
+    print (mfc)
+
+    print (mfc.point)
+
+
+
+"""
+def theoretical_minimum_constant_sum(self):
+        '''
+        Calculate the centroid and theoretical minimum constant sum.
         '''
         # Compute the centroid of the foci
         self.centroid = np.mean(self.foci, axis=0)
@@ -38,29 +118,76 @@ class MultifocalCurve:
         min_sum = sum(np.linalg.norm(focus - self.centroid) for focus in self.foci)
         return min_sum
 
-    def generate_point(self, max_iterations=1000, tolerance=1e-5):
+    def generate_point(self, angles=None):
         '''
-        Generate a random point on the multi-focal curve
+        Generate a point on the curve using hyperspherical coordinates.
         '''
+        if angles == None:
+            # Generate random angular coordinates
+            angles = np.random.uniform(0, np.pi, self.dimensions)
+            angles[-1] = np.random.uniform(0, 2 * np.pi)  # Azimuthal angle
 
-        # Compute distances and check if the constant sum can be achieved
-        distances = [np.linalg.norm(focus - point) for focus in self.foci]
-        if sum(distances) < self.constant_sum:
-            raise ValueError("Point cannot satisfy the given constant sum.")
+        # Define symbolic variables for radius and angles
+        r = symbols('r', positive=True)
+        angle_syms = symbols(f'phi_1:{self.dimensions}', positive=True)
 
-        # Compute the point if valid
-        dimensions = self.foci.shape[1]
-        point = np.random.randint(0, 100, size=(dimensions,), dtype=int)  # Start with random integral point
+        # Hyperspherical coordinates in symbolic form
+        coords = []
+        sin_product = 1
+        for i, angle in enumerate(angle_syms):
+            if i < len(angle_syms) - 1:
+                coords.append(r * sin_product * cos(angle))
+                sin_product *= sin(angle)
+            else:
+                coords.append(r * sin_product)
+
+        # Compute distances and constant sum equation
+        distances = [
+            sqrt(sum((coord - focus[k])**2 for k, coord in enumerate(coords)))
+            for focus in self.foci
+        ]
+        constraint = Eq(sum(distances), self.constant_sum)
+
+        print ("debug")
+
+        # Solve for radius
+        radius_solution = solve(constraint, r)
+        if not radius_solution:
+            raise ValueError("No valid radius found for given angles.")
+
+        print ("debug")
         
-        for _ in range(max_iterations):
-            distances = np.array([np.linalg.norm(point - f) for f in self.foci])
-            current_sum = np.sum(distances)
-            
-            if np.isclose(current_sum, self.constant_sum, atol=tolerance):
-                return point
-            
-            # Adjust the point to move closer to satisfying the constraint
-            adjustment = (self.constant_sum - current_sum) // len(self.foci)
-            point = point + np.sign(point - np.mean(self.foci, axis=0)) * adjustment
+        # Substitute back into coordinates
+        radius = float(radius_solution[0])
+        point = [coord.subs({r: radius, **{sym: val for sym, val in zip(angle_syms, angles)}}) for coord in coords]
+
+        print ("debug")
         
-        raise ValueError("Failed to generate a point on the curve within max_iterations.")
+        return np.array(point, dtype=float)
+      
+
+    def generate_point_with_seed(self, seed, **kwargs):
+        '''
+        Generate a deterministic point on the curve using hyperspherical coordinate search and a specific seed.
+        '''
+        random.seed(seed)
+        np.random.seed(seed)
+        return self.generate_point(**kwargs)
+
+    @staticmethod
+    def _hyperspherical_to_cartesian(r, angles):
+        '''
+        Convert hyperspherical coordinates to Cartesian coordinates.
+        '''
+        coords = []
+        sin_product = 1
+        for i, angle in enumerate(angles):
+            if i < len(angles) - 1:
+                coords.append(r * sin_product * np.cos(angle))
+                sin_product *= np.sin(angle)
+            else:
+                coords.append(r * sin_product)
+        return np.array(coords, dtype=int)
+
+
+"""    

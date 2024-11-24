@@ -30,12 +30,12 @@ class KeyGenerator:
         # Generate random foci for each dimension
         
         curve = MultifocalCurve (foci=None, constant_sum=constant_sum, foci_count=foci_count, dimensions=dimensions, bits=bits)   
-        curve.constant_sum = int(curve.constant_sum + np.random.uniform(1, 10))
         
         private_key = {
             "foci_count": foci_count,
             "dimensions": dimensions,
             "constant_sum": curve.constant_sum,
+            "point": curve.point,
             "foci": curve.foci,
         }
 
@@ -49,6 +49,7 @@ class KeyGenerator:
             "foci_count": foci_count,
             "dimensions": dimensions,
             "constant_sum": curve.constant_sum,
+            "point": curve.point,
             "foci_hash": foci_hash,
         }
 
@@ -67,6 +68,8 @@ class KeyFileHandler:
             file.write(f":{private_key['foci_count']}")
             file.write(f":{private_key['dimensions']}")
             file.write(f":{private_key['constant_sum']}")
+            coords = ",".join(f"0x{coord:0x}" for coord in private_key['point'])
+            file.write(f":coords")
             for i, focus in enumerate(private_key["foci"]):
                 coords = ",".join(f"0x{coord:0x}" for coord in focus)
                 file.write(f"\n:{i + 1}|{coords}")
@@ -81,6 +84,8 @@ class KeyFileHandler:
             file.write(f":{public_key['dimensions']}")
             file.write(f":{public_key['constant_sum']}")
             file.write(f":{public_key['foci_hash']}\n")
+            coords = ",".join(f"0x{coord:0x}" for coord in private_key['point'])
+            file.write(f":coords")
             file.write("-----END MCC PUBLIC KEY-----\n")
 
     @staticmethod
@@ -95,11 +100,18 @@ class KeyFileHandler:
             "foci_count": int(data[2].strip()),
             "dimensions": int(data[3].strip()),
             "constant_sum": int(data[4].strip()),
+            "point": [],
             "foci": [],
         }
 
+        # Parse the point
+        parts = lines[2].split("|")
+        if len(parts) > 0:
+            coords = parts[1].strip()
+            public_key["point"].extend(coords.split(","))
+
         current_focus = []  # To store coordinates of the current focus
-        for line in lines[2:]:  # Start processing after the header
+        for line in lines[3:]:  # Start processing after the header
             line = line.strip()
 
             if line.startswith(":"):  # Start of a new focus
@@ -153,6 +165,17 @@ class KeyFileHandler:
             "dimensions": int(data[3]),
             "constant_sum": int(data[4]),
             "foci_hash": data[5].strip(),
+            "point": []
         }
 
+        # Parse the first line of the new focus
+        parts = lines[2].split("|")
+        if len(parts) > 0:
+            coords = parts[1].strip()
+            public_key["point"].extend(coords.split(","))
+
         return public_key
+
+
+
+

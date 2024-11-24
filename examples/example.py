@@ -1,7 +1,7 @@
 from mcc import KeyGenerator, Encryption, DigitalSignature, KeyExchange
 
 # Key generation
-keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2, constant_sum=100)
+keypair = KeyGenerator.generate_keypair(foci_count=3, dimensions=2)
 
 # Encrypt and decrypt
 plaintext = "Hello"
