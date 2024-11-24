@@ -68,6 +68,50 @@ def detect_platform():
     
     return "cpu"  # Default fallback
 
+
+
+    @cuda.jit
+    def compute_multiples_distance_sums_kernel(point, foci, n_max, distance_sums):
+        """
+        CUDA kernel to compute distance sums for multiples of a point P.
+        
+        Parameters:
+        - point: The base point P (1D array of integers).
+        - foci: The set of foci (2D array of integers).
+        - n_max: The maximum multiplier for the point.
+        - distance_sums: Output array to store the distance sums for each multiple of P.
+        """
+        idx = cuda.grid(1)  # Global thread index
+        if idx < n_max:
+            n = idx + 1  # Multiplier for the point
+            total_sum = 0
+            
+            # Compute the nth multiple of the point
+            n_point = cuda.local.array(shape=(point.shape[0],), dtype=int32)
+            for d in range(point.shape[0]):
+                n_point[d] = n * point[d]
+            
+            # Compute the distance sum for n * P
+            for i in range(foci.shape[0]):
+                sum_squared = 0
+                for d in range(point.shape[0]):
+                    diff = n_point[d] - foci[i, d]
+                    sum_squared += diff * diff
+                total_sum += int(math.isqrt(sum_squared))  # Integer square root for precision
+            
+            # Store the result in the output array
+            distance_sums[idx] = total_sum
+
+
+'''
+DistanceSumCalculator
+
+Calculator for interfacing with hardware
+
+capable of Disatnce sum and Multiple distance sum calculations
+
+'''
+
 class DistanceSumCalculator:
     def __init__(self, platform=detect_platform()):
         self.platform = platform
@@ -153,28 +197,67 @@ class DistanceSumCalculator:
             distance_sum += np.sqrt(np.sum(squared_diff))
         return distance_sum / len(foci)
 
-    # Function to calculate distance sums using GPU
-    def _distance_sum_gpu(self, points, foci, n):
+    def calculate_multiples_distance_sums_gpu(point, foci, n_max):
         """
-        Calculate the distance sums using GPU acceleration with CUDA.
-        This is an optimized version that uses integer-based operations for CUDA.
+        Calculate distance sums for multiples of a point using GPU acceleration.
+        
+        Parameters:
+        - point: The base point P (1D array of integers).
+        - foci: The set of foci (2D array of integers).
+        - n_max: The maximum multiplier for the point.
+        
+        Returns:
+        - An array of distance sums for n * P (for n = 1, ..., n_max).
         """
-        # Allocate memory on the GPU
-        point_device = cuda.to_device(points)
+        # Ensure inputs are integer arrays
+        point = np.array(point, dtype=np.int32)
+        foci = np.array(foci, dtype=np.int32)
+        
+        # Allocate memory for the output
+        distance_sums_device = cuda.device_array(n_max, dtype=np.int32)
+        
+        # Copy inputs to the GPU
+        point_device = cuda.to_device(point)
         foci_device = cuda.to_device(foci)
-        distance_sums_device = cuda.device_array(points.shape[0], dtype=np.int32)
         
-        # Define grid and block size for CUDA kernel
+        # Define grid and block size
         threads_per_block = 256
-        blocks_per_grid = (points.shape[0] + (threads_per_block - 1)) // threads_per_block
+        blocks_per_grid = (n_max + (threads_per_block - 1)) // threads_per_block
         
-        # Launch the kernel
-        _compute_distance_sums_kernel[blocks_per_grid, threads_per_block](points_device, foci_device, distance_sums_device)
+        # Launch the CUDA kernel
+        compute_multiples_distance_sums_kernel[blocks_per_grid, threads_per_block](
+            point_device, foci_device, n_max, distance_sums_device
+        )
         
-        # Retrieve the results from GPU memory
+        # Retrieve results from GPU memory
         distance_sums = distance_sums_device.copy_to_host()
-        
         return distance_sums
+
+
+    # CPU fallback for the same operation
+    def calculate_multiples_distance_sums_cpu(point, foci, n_max):
+        """
+        Calculate distance sums for multiples of a point using CPU.
+        """
+        distance_sums = np.zeros(n_max, dtype=np.int32)
+        for n in range(1, n_max + 1):
+            n_point = n * point
+            total_sum = 0
+            for focus in foci:
+                sum_squared = np.sum((n_point - focus) ** 2)
+                total_sum += int(math.isqrt(sum_squared))
+            distance_sums[n - 1] = total_sum
+        return distance_sums
+
+    # Main function to decide whether to use GPU or CPU
+    def calculate_multiples_distance_sums(point, foci, n_max, use_gpu=False):
+        """
+        Main function to calculate distance sums for multiples of a point.
+        """
+        if use_gpu:
+            return calculate_multiples_distance_sums_gpu(point, foci, n_max)
+        else:
+            return calculate_multiples_distance_sums_cpu(point, foci, n_max)
 
 
 # Example usage
@@ -190,6 +273,18 @@ if __name__ == "__main__":
 
     distance_sum = calculator.distance_sum(point, foci)
     print(f"Distance Sum: {distance_sum}")
+
+    # Example input
+    point = ((np.random.rand(M)+1) * (2**28)).astype('i')
+    foci = ((np.random.rand(N, M)+1) * (2**28)).astype('i')
+    n_max = 100  # Calculate for n = 1 to n = 100
+    use_gpu = True  # Use GPU acceleration
+    
+    # Calculate distance sums
+    distance_sums = calculator.calculate_multiples_distance_sums(point, foci, n_max, use_gpu)
+    
+    # Print results
+    print(distance_sums)
 
 
 
