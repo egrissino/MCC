@@ -1,5 +1,7 @@
 import platform
 import numpy as np
+import math
+from numba import cuda, int32
 
 try:
     import pyopencl as cl
@@ -55,8 +57,11 @@ def detect_platform():
             return "macos_cpu"  # Fallback to plain CPU
     elif system == "Darwin" and "arm" in processor.lower():
         return "macos_torch_mps"  # Use PyTorch MPS backend for Apple Silicon
-    else:
-        return "cpu"  # Default fallback
+
+    if cuda.is_available():
+        return "gpu"
+    
+    return "cpu"  # Default fallback
 
 class DistanceSumCalculator:
     def __init__(self, platform=detect_platform()):
@@ -73,6 +78,8 @@ class DistanceSumCalculator:
             return self._distance_sum_opencl(point, foci)
         elif self.platform == "macos_intel_simd":
             return self._distance_sum_simd(point, foci)
+        elif self.platform == "gpu":
+            return self._distance_sum_gpu(point, foci)
         else:
             return self._distance_sum_cpu(point, foci)
 
@@ -140,6 +147,54 @@ class DistanceSumCalculator:
             squared_diff = (focus - point) ** 2
             distance_sum += np.sqrt(np.sum(squared_diff))
         return distance_sum / len(foci)
+
+
+
+    # CUDA kernel for computing distance sums (integer-based)
+    @cuda.jit
+    def _compute_distance_sums_kernel(points, foci, distance_sums):
+        """
+        CUDA kernel to compute distance sums for each point with integer-based operations.
+        """
+        idx = cuda.grid(1)
+        
+        if idx < points.shape[0]:
+            total_sum = 0
+            
+            for i in range(foci.shape[0]):
+                sum_squared = 0
+                for d in range(points.shape[1]):
+                    diff = points[idx, d] - foci[i, d]
+                    sum_squared += diff * diff
+                
+                # Using integer square root for precision
+                total_sum += int(math.isqrt(sum_squared))
+            
+            distance_sums[idx] = total_sum
+
+
+    # Function to calculate distance sums using GPU
+    def _distance_sum_gpu(points, foci):
+        """
+        Calculate the distance sums using GPU acceleration with CUDA.
+        This is an optimized version that uses integer-based operations for CUDA.
+        """
+        # Allocate memory on the GPU
+        points_device = cuda.to_device(points)
+        foci_device = cuda.to_device(foci)
+        distance_sums_device = cuda.device_array(points.shape[0], dtype=np.int32)
+        
+        # Define grid and block size for CUDA kernel
+        threads_per_block = 256
+        blocks_per_grid = (points.shape[0] + (threads_per_block - 1)) // threads_per_block
+        
+        # Launch the kernel
+        _compute_distance_sums_kernel[blocks_per_grid, threads_per_block](points_device, foci_device, distance_sums_device)
+        
+        # Retrieve the results from GPU memory
+        distance_sums = distance_sums_device.copy_to_host()
+        
+        return distance_sums
 
 
 # Example usage
