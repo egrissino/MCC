@@ -8,7 +8,7 @@ try:
     OPENCL_AVAILABLE = True
 except ImportError:
     OPENCL_AVAILABLE = False
-
+    
 def detect_intel_gpu():
     """
     Check if Intel Integrated Graphics is available via OpenCL.
@@ -47,6 +47,11 @@ def detect_platform():
     """
     system = platform.system()
     processor = platform.processor()
+    cuda_available = cuda.is_available()
+    
+    print (system)
+    print (processor)
+    print (cuda_available)
 
     if system == "Darwin" and "intel" in processor.lower():
         if detect_intel_gpu():
@@ -57,8 +62,8 @@ def detect_platform():
             return "macos_cpu"  # Fallback to plain CPU
     elif system == "Darwin" and "arm" in processor.lower():
         return "macos_torch_mps"  # Use PyTorch MPS backend for Apple Silicon
-
-    if cuda.is_available():
+    
+    if cuda_available:
         return "gpu"
     
     return "cpu"  # Default fallback
@@ -148,39 +153,14 @@ class DistanceSumCalculator:
             distance_sum += np.sqrt(np.sum(squared_diff))
         return distance_sum / len(foci)
 
-
-
-    # CUDA kernel for computing distance sums (integer-based)
-    @cuda.jit
-    def _compute_distance_sums_kernel(points, foci, distance_sums):
-        """
-        CUDA kernel to compute distance sums for each point with integer-based operations.
-        """
-        idx = cuda.grid(1)
-        
-        if idx < points.shape[0]:
-            total_sum = 0
-            
-            for i in range(foci.shape[0]):
-                sum_squared = 0
-                for d in range(points.shape[1]):
-                    diff = points[idx, d] - foci[i, d]
-                    sum_squared += diff * diff
-                
-                # Using integer square root for precision
-                total_sum += int(math.isqrt(sum_squared))
-            
-            distance_sums[idx] = total_sum
-
-
     # Function to calculate distance sums using GPU
-    def _distance_sum_gpu(points, foci):
+    def _distance_sum_gpu(self, points, foci, n):
         """
         Calculate the distance sums using GPU acceleration with CUDA.
         This is an optimized version that uses integer-based operations for CUDA.
         """
         # Allocate memory on the GPU
-        points_device = cuda.to_device(points)
+        point_device = cuda.to_device(points)
         foci_device = cuda.to_device(foci)
         distance_sums_device = cuda.device_array(points.shape[0], dtype=np.int32)
         
